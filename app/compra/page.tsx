@@ -24,7 +24,7 @@ export default async function CompraPage() {
     }
 
     // Datos hardcodeados para la transferencia manual de la beta
-    const WHATSAPP_NUMBER = "593900000000"; // Placeholder para que el usuario ponga el suyo
+    const WHATSAPP_NUMBER = "593984196793"; // Tu WhatsApp
     const COST = "$5.00";
     const PAYPHONE_LINK = "https://payp.hn/tu-enlace";
     const BANK_ACCOUNT = "Banco Pichincha - Cta Ahorros: 2200000000 - A nombre de: Hedon App";
