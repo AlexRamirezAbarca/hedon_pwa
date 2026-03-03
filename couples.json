@@ -1,0 +1,20 @@
+[
+  {
+    "id": "7ade980b-0d72-4041-b17e-958c4a78d474",
+    "user_a_id": "279bc8fb-d304-46b1-aad2-84a1b7c79551",
+    "user_b_id": null,
+    "couple_code": "31837a",
+    "status": "PENDING",
+    "created_at": "2026-02-23T00:20:51.447Z",
+    "updated_at": "2026-02-23T00:20:51.447Z"
+  },
+  {
+    "id": "4abb07fe-7767-4bdd-943b-f8ad3f902120",
+    "user_a_id": "7fed30b5-a328-422d-b9a2-6351222d7ff7",
+    "user_b_id": null,
+    "couple_code": "b2fcf8",
+    "status": "PENDING",
+    "created_at": "2026-02-23T00:20:38.421Z",
+    "updated_at": "2026-02-23T00:20:38.421Z"
+  }
+]

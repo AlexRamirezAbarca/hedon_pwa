@@ -1,64 +1,149 @@
-import Image from "next/image";
+import { createClient } from "@/utils/supabase/server";
+import { redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Playfair_Display } from "next/font/google";
+import { GameSessionObserver } from "@/components/game-session-observer";
+import { GameStartButton } from "@/components/game-start-button";
+import { Link, Share2, Activity, Settings } from "lucide-react";
 
-export default function Home() {
+const playfair = Playfair_Display({ subsets: ["latin"] });
+
+export default async function Home() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return redirect("/login");
+  }
+
+  // Intercept for manual Beta payment phase
+  const hasPaid = user.user_metadata?.has_paid === true;
+  if (!hasPaid) {
+    return redirect("/compra");
+  }
+
+  // Check Couple Status
+  const { data: currentCouple } = await supabase
+    .from('couples')
+    .select('*')
+    .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`)
+    .eq('status', 'ACTIVE')
+    .single();
+
+  let isPaired = !!currentCouple;
+
+  // Enforce 24-hour ephemeral session logic
+  if (currentCouple) {
+    const createdTime = new Date(currentCouple.created_at).getTime();
+    const diffHours = (Date.now() - createdTime) / (1000 * 60 * 60);
+
+    if (diffHours >= 24) {
+      // Destruir sala si han pasado más de 24 horas sin invocar revalidatePath durante el render
+      await supabase.from('game_sessions').delete().eq('couple_id', currentCouple.id);
+      await supabase.from('couples').delete().eq('id', currentCouple.id);
+      isPaired = false;
+    }
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="p-6 relative overflow-hidden flex-1 flex flex-col">
+
+      <header className="flex justify-between items-center mb-12">
+        <h1 className={`${playfair.className} text-2xl font-black tracking-tight`}>
+          Hedon<span className="text-red-700">.</span>
+        </h1>
+        <form action="/auth/signout" method="post">
+          <Button variant="ghost" className="text-zinc-500 hover:text-white hover:bg-zinc-900 border border-zinc-900 rounded-full h-8 w-8 p-0 grid place-items-center">
+            <span className="sr-only">Salir</span>
+            <Settings className="w-4 h-4" />
+          </Button>
+        </form>
+      </header>
+
+      <main className="max-w-md mx-auto space-y-8">
+
+        {/* Welcome Section */}
+        <section className="space-y-4">
+          <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] uppercase font-bold tracking-widest ${isPaired ? 'bg-red-900/20 border-red-900/30 text-red-400' : 'bg-zinc-900 border-zinc-800 text-zinc-400'}`}>
+            <Activity className="w-3 h-3" /> Estado: {isPaired ? 'VINCULADOS' : 'Desconectado'}
+          </div>
+
+          <h2 className="text-4xl font-serif font-medium leading-tight text-zinc-100">
+            Hola, <span className="text-zinc-500 italic">{user.user_metadata.full_name || 'Amante'}</span>.
+          </h2>
+          <p className="text-zinc-400 text-sm">
+            {isPaired
+              ? "Tu conexión está establecida. Próximamente la experiencia comenzará aquí."
+              : "Tu sesión está activa pero solitaria. Para iniciar la experiencia, necesitas vincularte."}
           </p>
+        </section>
+
+        {/* Action Cards */}
+        <div className="grid gap-4">
+
+          {!isPaired ? (
+            <>
+              {/* Connect Card */}
+              <a href="/connect" className="group block">
+                <Card className="bg-zinc-900/50 border-zinc-800 p-6 flex items-center justify-between hover:bg-zinc-900/80 hover:border-red-900/30 transition-all cursor-pointer group-hover:shadow-[0_0_30px_-5px_rgba(220,38,38,0.2)]">
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-serif font-bold text-white group-hover:text-red-500 transition-colors">Vincular Pareja</h3>
+                    <p className="text-xs text-zinc-500">Escanea el código QR o comparte el link.</p>
+                  </div>
+                  <div className="h-10 w-10 bg-black rounded-full grid place-items-center border border-zinc-800 group-hover:border-red-900 group-hover:text-red-500 transition-colors">
+                    <Share2 className="w-5 h-5" />
+                  </div>
+                </Card>
+              </a>
+
+              {/* Solo Mode (Disabled) */}
+              <div className="opacity-50 grayscale cursor-not-allowed">
+                <Card className="bg-transparent border-zinc-900 p-6 flex items-center justify-between border-dashed">
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-serif font-bold text-zinc-600">Modo Solo</h3>
+                    <p className="text-xs text-zinc-700">Exploración individual (Próximamente).</p>
+                  </div>
+                </Card>
+              </div>
+            </>
+          ) : (
+            <div className="space-y-4">
+              <GameSessionObserver coupleId={currentCouple.id} />
+              {/* Active Connection Panel */}
+              <Card className="bg-black border-red-900/30 p-6 flex flex-col items-center justify-center space-y-6 shadow-[0_0_50px_-10px_rgba(220,38,38,0.15)]">
+                <div className="w-full text-center space-y-1">
+                  <p className="text-xs uppercase text-red-500 font-bold tracking-widest animate-pulse">Conexión Segura</p>
+                  <h3 className="text-xl font-serif text-white">Listos para empezar</h3>
+                </div>
+
+                <div className="flex items-center gap-4 py-2">
+                  <div className="w-16 h-16 rounded-full bg-zinc-900 flex items-center justify-center border-2 border-zinc-800 text-xl font-serif">TÚ</div>
+                  <div className="h-px bg-gradient-to-r from-zinc-800 via-red-900 to-zinc-800 w-12" />
+                  <div className="w-16 h-16 rounded-full bg-red-950 flex items-center justify-center border-2 border-red-900 text-xl font-serif shadow-[0_0_20px_-5px_rgba(220,38,38,0.5)]">P2</div>
+                </div>
+
+                <GameStartButton />
+              </Card>
+
+              {/* Disconnect Form */}
+              <form action={async () => {
+                "use server"
+                const { unpairCouple } = await import("@/app/actions/pairing")
+                await unpairCouple()
+              }}>
+                <Button variant="outline" type="submit" className="w-full border-zinc-800 text-zinc-500 hover:text-red-400 hover:bg-red-950/20 hover:border-red-900/50">
+                  Desvincular Dispositivos
+                </Button>
+              </form>
+            </div>
+          )}
+
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
       </main>
     </div>
   );
