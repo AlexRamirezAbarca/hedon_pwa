@@ -7,6 +7,7 @@ import { GameSessionObserver } from "@/components/game-session-observer";
 import { GameStartButton } from "@/components/game-start-button";
 import { Link, Share2, Activity, Settings } from "lucide-react";
 import { WelcomeSplash } from "@/components/welcome-splash";
+import { UserMenu } from "@/components/user-menu";
 
 const playfair = Playfair_Display({ subsets: ["latin"] });
 
@@ -58,12 +59,9 @@ export default async function Home() {
         <h1 className={`${playfair.className} text-2xl font-black tracking-tight`}>
           Hedon<span className="text-red-700">.</span>
         </h1>
-        <form action="/auth/signout" method="post">
-          <Button variant="ghost" className="text-zinc-500 hover:text-white hover:bg-zinc-900 border border-zinc-900 rounded-full h-8 w-8 p-0 grid place-items-center">
-            <span className="sr-only">Salir</span>
-            <Settings className="w-4 h-4" />
-          </Button>
-        </form>
+        <div className="flex items-center gap-3">
+          <UserMenu user={user} />
+        </div>
       </header>
 
       <main className="max-w-md mx-auto space-y-8">
