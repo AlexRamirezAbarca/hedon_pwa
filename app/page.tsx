@@ -6,6 +6,7 @@ import { Playfair_Display } from "next/font/google";
 import { GameSessionObserver } from "@/components/game-session-observer";
 import { GameStartButton } from "@/components/game-start-button";
 import { Link, Share2, Activity, Settings } from "lucide-react";
+import { WelcomeSplash } from "@/components/welcome-splash";
 
 const playfair = Playfair_Display({ subsets: ["latin"] });
 
@@ -51,6 +52,7 @@ export default async function Home() {
 
   return (
     <div className="p-6 relative overflow-hidden flex-1 flex flex-col">
+      <WelcomeSplash />
 
       <header className="flex justify-between items-center mb-12">
         <h1 className={`${playfair.className} text-2xl font-black tracking-tight`}>
