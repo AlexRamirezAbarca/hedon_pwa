@@ -4,10 +4,14 @@ import { Playfair_Display } from "next/font/google";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Lock, CreditCard, MessageCircle, LogOut } from "lucide-react";
+import { WelcomeSplash } from "@/components/welcome-splash";
 
 const playfair = Playfair_Display({ subsets: ["latin"] });
 
-export default async function CompraPage() {
+export default async function CompraPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+    const searchParams = await props.searchParams;
+    const isNewLogin = searchParams?.login === 'success';
+
     const supabase = await createClient();
 
     const {
@@ -20,6 +24,7 @@ export default async function CompraPage() {
 
     // Si ya pagó, enviarlo de vuelta al inicio
     if (user.user_metadata?.has_paid === true) {
+        if (isNewLogin) return redirect("/?login=success");
         return redirect("/");
     }
 
@@ -34,6 +39,8 @@ export default async function CompraPage() {
 
     return (
         <div className="flex-1 flex flex-col min-h-screen bg-black overflow-y-auto selection:bg-red-900/30">
+            {isNewLogin && <WelcomeSplash />}
+            
             {/* Header simple */}
             <header className="h-16 flex items-center justify-between px-6 border-b border-zinc-900/50 bg-black/80 backdrop-blur-md">
                 <div className="flex items-center gap-3">

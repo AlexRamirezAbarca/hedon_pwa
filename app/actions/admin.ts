@@ -98,3 +98,93 @@ export async function toggleUserVIP(userId: string, currentStatus: boolean) {
       return { success: false, error: e.message }
   }
 }
+
+export type AdminKPIs = {
+  totalUsers: number;
+  vipUsers: number;
+  conversionRate: string;
+  activeSessions: number;
+}
+
+export type GameSessionData = {
+  id: string;
+  couple_id: string;
+  scenario_config: any;
+  created_at: string;
+  last_activity?: string;
+}
+
+export async function getAdminKPIs(): Promise<{ kpis: AdminKPIs | null, error?: string }> {
+  try {
+    const supabase = await createServerClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { kpis: null, error: 'Unauthorized' }
+    if (supabaseServiceKey === 'MISSING_KEY') return { kpis: null, error: 'Missing Service Key' }
+
+    // 1. Fetch Users Info
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers()
+    if (userError) throw userError
+
+    const totalUsers = userData.users.length
+    const vipUsers = userData.users.filter(u => u.user_metadata?.has_paid === true).length
+    const conversionRate = totalUsers > 0 ? ((vipUsers / totalUsers) * 100).toFixed(1) + '%' : '0%'
+
+    // 2. Fetch Active Game Sessions
+    const { count: activeSessions, error: sessionError } = await supabaseAdmin
+      .from('game_sessions')
+      .select('*', { count: 'exact', head: true })
+      
+    if (sessionError) throw sessionError
+
+    return { 
+      kpis: {
+        totalUsers,
+        vipUsers,
+        conversionRate,
+        activeSessions: activeSessions || 0
+      } 
+    }
+  } catch (e: any) {
+    return { kpis: null, error: e.message }
+  }
+}
+
+export async function getActiveGameSessions(): Promise<{ sessions: GameSessionData[], error?: string }> {
+  try {
+    const supabase = await createServerClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { sessions: [], error: 'Unauthorized' }
+
+    const { data, error } = await supabaseAdmin
+      .from('game_sessions')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+
+    return { sessions: data as GameSessionData[] }
+  } catch (e: any) {
+    return { sessions: [], error: e.message }
+  }
+}
+
+export async function destroyGameSession(sessionId: string) {
+  try {
+    const supabase = await createServerClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'Unauthorized' }
+
+    // Delete the game session
+    const { error } = await supabaseAdmin
+      .from('game_sessions')
+      .delete()
+      .eq('id', sessionId)
+
+    if (error) throw error
+    
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (e: any) {
+    return { success: false, error: e.message }
+  }
+}

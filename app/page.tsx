@@ -11,7 +11,10 @@ import { UserMenu } from "@/components/user-menu";
 
 const playfair = Playfair_Display({ subsets: ["latin"] });
 
-export default async function Home() {
+export default async function Home(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const searchParams = await props.searchParams;
+  const isNewLogin = searchParams?.login === 'success';
+
   const supabase = await createClient();
 
   const {
@@ -22,9 +25,13 @@ export default async function Home() {
     return redirect("/login");
   }
 
+  const adminEmails = process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',') : [];
+  const isAdmin = adminEmails.includes(user.email || '');
+
   // Intercept for manual Beta payment phase
   const hasPaid = user.user_metadata?.has_paid === true;
   if (!hasPaid) {
+    if (isNewLogin) return redirect("/compra?login=success");
     return redirect("/compra");
   }
 
@@ -53,14 +60,14 @@ export default async function Home() {
 
   return (
     <div className="p-6 relative overflow-hidden flex-1 flex flex-col">
-      <WelcomeSplash />
+      {isNewLogin && <WelcomeSplash />}
 
       <header className="flex justify-between items-center mb-12">
         <h1 className={`${playfair.className} text-2xl font-black tracking-tight`}>
           Hedon<span className="text-red-700">.</span>
         </h1>
         <div className="flex items-center gap-3">
-          <UserMenu user={user} />
+          <UserMenu user={user} isAdmin={isAdmin} />
         </div>
       </header>
 

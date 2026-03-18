@@ -75,19 +75,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // 3. Role-Based Access Control (RBAC) Stub - For future Admin Panel
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-      // Future implementation: Fetch role from user.app_metadata or public.profiles
-      // const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-      // if (!profile || profile.role !== 'ADMIN') { ... }
-      
-      const userRole = user?.user_metadata?.role || 'USER'; // Fallback
-      if (userRole !== 'ADMIN') {
-          const url = request.nextUrl.clone()
-          url.pathname = '/' // Redirect to main dashboard
-          return NextResponse.redirect(url)
-      }
-  }
+  // 3. Security for Admin Panel is handled inside app/admin/layout.tsx via env var ADMIN_EMAILS.
 
   return response
 }

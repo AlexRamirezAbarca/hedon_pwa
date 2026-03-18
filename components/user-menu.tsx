@@ -15,7 +15,7 @@ import {
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
 
-export function UserMenu({ user }: { user: User }) {
+export function UserMenu({ user, isAdmin = false }: { user: User, isAdmin?: boolean }) {
     const router = useRouter()
     const supabase = createClient()
     const [isSignOut, setIsSignOut] = useState(false)
@@ -67,12 +67,15 @@ export function UserMenu({ user }: { user: User }) {
                     <span>Ajustes (Próximamente)</span>
                 </DropdownMenuItem>
 
-                <Link href="/admin">
-                    <DropdownMenuItem className="focus:bg-zinc-900 rounded-lg cursor-pointer text-zinc-400 focus:text-white transition-colors py-2.5">
+                {isAdmin && (
+                    <DropdownMenuItem 
+                        onClick={() => router.push('/admin')}
+                        className="focus:bg-zinc-900 rounded-lg cursor-pointer text-zinc-400 focus:text-white transition-colors py-2.5"
+                    >
                         <Shield className="w-4 h-4 mr-2" />
                         <span>Centro de Mando</span>
                     </DropdownMenuItem>
-                </Link>
+                )}
 
                 <DropdownMenuSeparator className="bg-zinc-900/50 my-2" />
 
