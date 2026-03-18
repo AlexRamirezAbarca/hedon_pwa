@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from "react"
-import { LogOut, User as UserIcon, Settings, ChevronDown } from "lucide-react"
+import { LogOut, User as UserIcon, Settings, ChevronDown, Shield } from "lucide-react"
 import { User } from "@supabase/supabase-js"
+import Link from "next/link"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -65,6 +66,13 @@ export function UserMenu({ user }: { user: User }) {
                     <Settings className="w-4 h-4 mr-2" />
                     <span>Ajustes (Próximamente)</span>
                 </DropdownMenuItem>
+
+                <Link href="/admin">
+                    <DropdownMenuItem className="focus:bg-zinc-900 rounded-lg cursor-pointer text-zinc-400 focus:text-white transition-colors py-2.5">
+                        <Shield className="w-4 h-4 mr-2" />
+                        <span>Centro de Mando</span>
+                    </DropdownMenuItem>
+                </Link>
 
                 <DropdownMenuSeparator className="bg-zinc-900/50 my-2" />
 
