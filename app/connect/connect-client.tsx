@@ -101,18 +101,40 @@ export function ConnectClient({ initialCode, initialStatus, coupleId }: ConnectC
         }
     }
 
-    const handleScan = (detectedCodes: any[]) => {
-        if (!detectedCodes || detectedCodes.length === 0 || loading || isMatched) return;
+    const handleScan = (result: any) => {
+        if (!result || loading || isMatched) return;
         
-        const rawValue = detectedCodes[0].rawValue;
+        let rawValue = '';
+        
+        // Manejar múltiples versiones de la API del escáner
+        if (Array.isArray(result)) {
+            if (result.length === 0) return;
+            rawValue = result[0].rawValue || result[0].text || '';
+        } else if (typeof result === 'string') {
+            rawValue = result;
+        } else if (result.text || result.rawValue) {
+            rawValue = result.text || result.rawValue;
+        }
+
         if (!rawValue) return;
 
-        // Extract the 7-character code from the URL (e.g., https://hedon.app/join/X7B9K2M) or if it's just the code
-        const match = rawValue.match(/([a-zA-Z0-9]{7})$/);
-        if (match && match[1]) {
-            const code = match[1].toUpperCase();
+        // Extraer el código (de enlace o texto limpio)
+        let extractedCode = '';
+        try {
+            // Si es un enlace tipo https://hedon.app/join/A1B2C
+            const url = new URL(rawValue);
+            const parts = url.pathname.split('/').filter(Boolean);
+            extractedCode = parts[parts.length - 1];
+        } catch (e) {
+            // Si es texto puro
+            extractedCode = rawValue.trim();
+        }
+
+        extractedCode = extractedCode.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+
+        if (extractedCode.length >= 5) {
             const fd = new FormData();
-            fd.append('code', code);
+            fd.append('code', extractedCode);
             handleJoinSubmit(fd);
         }
     }
